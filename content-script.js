@@ -47,47 +47,15 @@ function getImage(imageType, elem, bgImage = false) {
   .catch((error) => console.log(error));
 }
 
-// function onMutation(mutations) {
-//   for (var i = 0, len = mutations.length; i < len; i++) {
-//       var added = mutations[i].addedNodes;
-//       for (var j = 0, lenAdded = added.length; j < lenAdded; j++) {
-//           var node = added[j];
-
-//           if (!node.parentNode || !node.textContent.match(pattern)) continue;
-
-//           editNode(node);
-//       }
-//   }
-// }
-
-// function editNode(node) {
-//   var treeWalker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
-//   var textNode;
-
-//   while (textNode = treeWalker.nextNode()) {
-//       textNode.nodeValue = textNode.nodeValue.replace(pattern, '');
-//       mutation.addedNodes.setAttribute('cache-index', undefined);
-//   }
-// }
-
-
 function modifyImages(mutations) {
+  // console.log(mutations);
   if (imageType === 'neither') return;
-  // for (const mutation of mutations) {
-  //   var added = mutations[i].addedNodes;
-  //   for (var j = 0, lenAdded = added.length; j < lenAdded; j++) {
-  //       var node = added[j];
 
-  //       if (!node.parentNode || !node.textContent.match(pattern)) continue;
-
-  //       editNode(node);
-  //   }
-  //   editNode(node);
-  // }
   // get all images
   const srcImgNodes = document.querySelectorAll("source");
   const divNodes = document.querySelectorAll("div");
   const imgNodes = document.querySelectorAll("img");
+  const vidNodes = document.querySelectorAll("video");
   // console.log(data);
 
   // // replace pictures
@@ -107,6 +75,14 @@ function modifyImages(mutations) {
       cache[cacheIndex] = true;
     }
   }
+  for (let i = 0; i < vidNodes.length; i++){
+    if(!cache[vidNodes[i].getAttribute('cache-index')]) {
+      getImage(imageType, vidNodes[i]);
+      const cacheIndex = Math.random() * 999999;
+      vidNodes[i].setAttribute('cache-index', cacheIndex);
+      cache[cacheIndex] = true;
+    }
+  }
   for (let i = 0; i < divNodes.length; i++) {
     const divStyle = divNodes[i].getAttribute('style');
     if (divStyle && divStyle.search('background-image') !== -1) {
@@ -120,11 +96,13 @@ function modifyImages(mutations) {
   }
 }
 
-
 // monitor for any updates on page...
 let observer = new MutationObserver(modifyImages);
-observer.observe(document, {
-    // attributes: true
+observer.observe(document.body, {
+    attributes: true,
     childList: true,
-    subtree: true
+    characterDataOldValue: true,
+    characterData: true,
+    attributeFilter: ['src', 'srcset', 'style'],
+    // subtree: true
 });
