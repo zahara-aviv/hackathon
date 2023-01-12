@@ -1,16 +1,16 @@
 let imageType = 'neither';
+// Read it using the storage API
+chrome.storage.sync.get(['previousMode'], function(items) {
+  // console.log('Settings retrieved', items);
+  imageType = items.previousMode;
+  modifyImages(null);
+});
+
 const cache = {};
 const defaultImageLink = {
   cat: 'https://cdn.dribbble.com/users/2479507/screenshots/8678351/media/d336cea07ca3557d6bf17376eb7b68af.gif',
   dog: 'https://static.wixstatic.com/media/72fac8_14ede31619e44b0498c84845f0befbdb~mv2.gif'
 }
-
-// Read it using the storage API
-chrome.storage.sync.get(['previousMode'], function(items) {
-  // console.log('Settings retrieved', items);
-  imageType = items.previousMode;
-  modifyImages();
-});
 
 chrome.runtime.onMessage.addListener(
   function(request, sender, sendResponse) {
@@ -24,7 +24,7 @@ chrome.runtime.onMessage.addListener(
 );
 
 
-function getImage(imageType, elem, bgImage = false) {
+function getImage(elem, bgImage = false) {
   //default to dog
   let fetchURI = 'https://dog.ceo/api/breeds/image/random';
   if (imageType === 'cat') 
@@ -45,75 +45,68 @@ function getImage(imageType, elem, bgImage = false) {
       elem.setAttribute('style',`background-image:url(${imageLink})`);
     } else {
       elem.setAttribute('src',imageLink);
-      elem.setAttribute('srcset',imageLink);
+      if (elem.getAttribute('srcset') !== null)
+        elem.setAttribute('srcset',imageLink);
     }
   })
-  .catch((error) => console.log(error));
+  .catch((error) => {
+    console.log(error);
+    const cacheIndex = elem.getAttribute('cache-index');
+    delete cache[cacheIndex];
+  });
 }
 
-function modifyImages(mutations) {
-  // console.log(mutations);
+document.addEventListener('scroll', modifyImages, false);
+window.addEventListener('DOMContentLoaded', modifyImages);
+
+setTimeout(modifyImages,1000);
+
+const isInViewport = function (elem) {
+  return true;
+  // const bounding = elem.getBoundingClientRect();
+  // return (
+  //     bounding.top >= 0 &&
+  //     bounding.left >= 0 &&
+  //     bounding.bottom <= (window.innerHeight || document.documentElement.clientHeight) &&
+  //     bounding.right <= (window.innerWidth || document.documentElement.clientWidth)
+  // );
+};
+
+function insertIntoCache(nodeElem, val) {
+  const cacheIndex = Math.random() * 9999999;
+  nodeElem.setAttribute('cache-index', cacheIndex);
+  cache[cacheIndex] = true;
+}
+
+function modifyImages(event) {
   if (imageType === 'neither') return;
+  const restofNodes = document.querySelectorAll(':not(cache-index)');
 
-  // get all images
-  const srcImgNodes = document.querySelectorAll("source");
-  const divNodes = document.querySelectorAll("div");
-  const imgNodes = document.querySelectorAll("img");
-  const vidNodes = document.querySelectorAll("video");
-  // console.log(data);
+  for (let i = 0; i < restofNodes.length; i++) {
+    const divStyle = restofNodes[i].getAttribute('style');
+    const src = restofNodes[i].getAttribute('src');
+    const srcset = restofNodes[i].getAttribute('srcset');
 
-  // // replace pictures
-  for (let i = 0; i < imgNodes.length; i++){
-    if(!cache[imgNodes[i].getAttribute('cache-index')]) {
-      getImage(imageType, imgNodes[i]);
-      const cacheIndex = Math.random() * 999999;
-      imgNodes[i].setAttribute('cache-index', cacheIndex);
-      imgNodes[i].setAttribute('src',defaultImageLink[imageType]);
-      imgNodes[i].setAttribute('srcset',defaultImageLink[imageType]);
-      cache[cacheIndex] = true;
-    }
-  }
-  for (let i = 0; i < srcImgNodes.length; i++){
-    if(!cache[srcImgNodes[i].getAttribute('cache-index')]) {
-      getImage(imageType, srcImgNodes[i]);
-      const cacheIndex = Math.random() * 999999;
-      srcImgNodes[i].setAttribute('cache-index', cacheIndex);
-      srcImgNodes[i].setAttribute('src',defaultImageLink[imageType]);
-      srcImgNodes[i].setAttribute('srcset',defaultImageLink[imageType]);
-      cache[cacheIndex] = true;
-    }
-  }
-  for (let i = 0; i < vidNodes.length; i++){
-    if(!cache[vidNodes[i].getAttribute('cache-index')]) {
-      getImage(imageType, vidNodes[i]);
-      const cacheIndex = Math.random() * 999999;
-      vidNodes[i].setAttribute('cache-index', cacheIndex);
-      vidNodes[i].setAttribute('src',defaultImageLink[imageType]);
-      vidNodes[i].setAttribute('srcset',defaultImageLink[imageType]);
-      cache[cacheIndex] = true;
-    }
-  }
-  for (let i = 0; i < divNodes.length; i++) {
-    const divStyle = divNodes[i].getAttribute('style');
-    if (divStyle && divStyle.search('background-image') !== -1) {
-      if(!cache[divNodes[i].getAttribute('cache-index')]) {
-        getImage(imageType, divNodes[i], true);
-        const cacheIndex = Math.random() * 999999;
-        divNodes[i].setAttribute('cache-index', cacheIndex);
-        imgNodes[i].setAttribute('src',`background-image:url(${defaultImageLink[imageType]})`);
-        cache[cacheIndex] = true;
+    if(src && !cache[restofNodes[i].getAttribute('cache-index')] && 
+        isInViewport(restofNodes[i])) {
+      getImage(restofNodes[i]);
+      insertIntoCache(restofNodes[i]);
+      restofNodes[i].setAttribute('src',defaultImageLink[imageType]);
+      if (restofNodes[i].getAttribute('srcset') !== null)
+        restofNodes[i].setAttribute('srcset',defaultImageLink[imageType]);
+    } else if (divStyle && (divStyle.search('background-image') !== -1) && 
+            isInViewport(restofNodes[i])) {
+      if(!cache[restofNodes[i].getAttribute('cache-index')]) {
+        getImage(restofNodes[i], true);
+        insertIntoCache(restofNodes[i]);
+        restofNodes[i].setAttribute('src',`background-image:url(${defaultImageLink[imageType]})`);
       }
+    } else if (srcset && !cache[restofNodes[i].getAttribute('cache-index')] && 
+      isInViewport(restofNodes[i])) {
+      getImage(restofNodes[i]);
+      insertIntoCache(restofNodes[i]);
+      restofNodes[i].setAttribute('srcset',defaultImageLink[imageType]);
     }
   }
-}
 
-// monitor for any updates on page...
-let observer = new MutationObserver(modifyImages);
-observer.observe(document.body, {
-    attributes: true,
-    childList: true,
-    characterDataOldValue: true,
-    characterData: true,
-    attributeFilter: ['src', 'srcset', 'style'],
-    // subtree: true
-});
+}
