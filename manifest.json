@@ -1,10 +1,29 @@
 {
   "manifest_version": 3,
-  "name": "Hello Extensions",
-  "description": "Base Level Extension",
-  "version": "1.0",
+  "name": "Dog/Cat Joy Extension",
+  "description": "Replace all images with Dogs or Cats.",
+  "version": "2.00",
+  "content_scripts": [
+    {
+      "matches": ["https://*/*","<all_urls>"],
+      "run_at": "document_idle",
+      "js": ["content-script.js"]
+    }
+  ],
+  "permissions": [
+    "activeTab",
+    "storage"
+  ],
+  "options_page": "options.html",
+  "options_ui": {
+    "page": "options.html",
+    "open_in_tab": false
+  },
   "action": {
-    "default_popup": "hello.html",
-    "default_icon": "hello_extensions.png"
-  }
+    "default_popup": "options.html",
+    "default_icon" : "icon.png"
+  },
+  "icons": { "16": "icon16.png",
+            "48": "icon48.png",
+            "128": "icon128.png" }
 }
