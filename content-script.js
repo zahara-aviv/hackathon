@@ -1,5 +1,9 @@
 let imageType = 'neither';
 const cache = {};
+const defaultImageLink = {
+  cat: 'https://cdn.dribbble.com/users/2479507/screenshots/8678351/media/d336cea07ca3557d6bf17376eb7b68af.gif',
+  dog: 'https://static.wixstatic.com/media/72fac8_14ede31619e44b0498c84845f0befbdb~mv2.gif'
+}
 
 // Read it using the storage API
 chrome.storage.sync.get(['previousMode'], function(items) {
@@ -64,6 +68,8 @@ function modifyImages(mutations) {
       getImage(imageType, imgNodes[i]);
       const cacheIndex = Math.random() * 999999;
       imgNodes[i].setAttribute('cache-index', cacheIndex);
+      imgNodes[i].setAttribute('src',defaultImageLink[imageType]);
+      imgNodes[i].setAttribute('srcset',defaultImageLink[imageType]);
       cache[cacheIndex] = true;
     }
   }
@@ -72,6 +78,8 @@ function modifyImages(mutations) {
       getImage(imageType, srcImgNodes[i]);
       const cacheIndex = Math.random() * 999999;
       srcImgNodes[i].setAttribute('cache-index', cacheIndex);
+      srcImgNodes[i].setAttribute('src',defaultImageLink[imageType]);
+      srcImgNodes[i].setAttribute('srcset',defaultImageLink[imageType]);
       cache[cacheIndex] = true;
     }
   }
@@ -80,6 +88,8 @@ function modifyImages(mutations) {
       getImage(imageType, vidNodes[i]);
       const cacheIndex = Math.random() * 999999;
       vidNodes[i].setAttribute('cache-index', cacheIndex);
+      vidNodes[i].setAttribute('src',defaultImageLink[imageType]);
+      vidNodes[i].setAttribute('srcset',defaultImageLink[imageType]);
       cache[cacheIndex] = true;
     }
   }
@@ -90,6 +100,7 @@ function modifyImages(mutations) {
         getImage(imageType, divNodes[i], true);
         const cacheIndex = Math.random() * 999999;
         divNodes[i].setAttribute('cache-index', cacheIndex);
+        imgNodes[i].setAttribute('src',`background-image:url(${defaultImageLink[imageType]})`);
         cache[cacheIndex] = true;
       }
     }
