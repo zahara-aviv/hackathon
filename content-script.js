@@ -1,8 +1,11 @@
-let imageType = 'dog';
+let imageType = 'neither';
+const cache = {};
+
 // Read it using the storage API
 chrome.storage.sync.get(['previousMode'], function(items) {
   // console.log('Settings retrieved', items);
   imageType = items.previousMode;
+  modifyImages();
 });
 
 chrome.runtime.onMessage.addListener(
@@ -44,31 +47,76 @@ function getImage(imageType, elem, bgImage = false) {
   .catch((error) => console.log(error));
 }
 
+// function onMutation(mutations) {
+//   for (var i = 0, len = mutations.length; i < len; i++) {
+//       var added = mutations[i].addedNodes;
+//       for (var j = 0, lenAdded = added.length; j < lenAdded; j++) {
+//           var node = added[j];
+
+//           if (!node.parentNode || !node.textContent.match(pattern)) continue;
+
+//           editNode(node);
+//       }
+//   }
+// }
+
+// function editNode(node) {
+//   var treeWalker = document.createTreeWalker(node, NodeFilter.SHOW_TEXT);
+//   var textNode;
+
+//   while (textNode = treeWalker.nextNode()) {
+//       textNode.nodeValue = textNode.nodeValue.replace(pattern, '');
+//       mutation.addedNodes.setAttribute('cache-index', undefined);
+//   }
+// }
+
 
 function modifyImages(mutations) {
   if (imageType === 'neither') return;
+  // for (const mutation of mutations) {
+  //   var added = mutations[i].addedNodes;
+  //   for (var j = 0, lenAdded = added.length; j < lenAdded; j++) {
+  //       var node = added[j];
+
+  //       if (!node.parentNode || !node.textContent.match(pattern)) continue;
+
+  //       editNode(node);
+  //   }
+  //   editNode(node);
+  // }
   // get all images
-  const sourceImg = document.querySelectorAll("source");
-  const dataDiv = document.querySelectorAll("div");
-  const data = document.querySelectorAll("img");
+  const srcImgNodes = document.querySelectorAll("source");
+  const divNodes = document.querySelectorAll("div");
+  const imgNodes = document.querySelectorAll("img");
   // console.log(data);
 
   // // replace pictures
-  for (let i = 0; i < data.length; i++){
-    // removeChild(data[i]);
-    // cache[data[i]] = true;
-    getImage(imageType, data[i]);
+  for (let i = 0; i < imgNodes.length; i++){
+    if(!cache[imgNodes[i].getAttribute('cache-index')]) {
+      getImage(imageType, imgNodes[i]);
+      const cacheIndex = Math.random() * 999999;
+      imgNodes[i].setAttribute('cache-index', cacheIndex);
+      cache[cacheIndex] = true;
+    }
   }
-  for (let i = 0; i < sourceImg.length; i++){
-    // removeChild(data[i]);
-    // cache[data[i]] = true;
-    getImage(imageType, sourceImg[i]);
+  for (let i = 0; i < srcImgNodes.length; i++){
+    if(!cache[srcImgNodes[i].getAttribute('cache-index')]) {
+      getImage(imageType, srcImgNodes[i]);
+      const cacheIndex = Math.random() * 999999;
+      srcImgNodes[i].setAttribute('cache-index', cacheIndex);
+      cache[cacheIndex] = true;
+    }
   }
-  for (let i = 0; i < dataDiv.length; i++) {
-    const divStyle = dataDiv[i].getAttribute('style');
-    // console.log(divStyle);
-    if (divStyle && divStyle.search('background-image') !== -1)
-      getImage(imageType, dataDiv[i], true);
+  for (let i = 0; i < divNodes.length; i++) {
+    const divStyle = divNodes[i].getAttribute('style');
+    if (divStyle && divStyle.search('background-image') !== -1) {
+      if(!cache[divNodes[i].getAttribute('cache-index')]) {
+        getImage(imageType, divNodes[i], true);
+        const cacheIndex = Math.random() * 999999;
+        divNodes[i].setAttribute('cache-index', cacheIndex);
+        cache[cacheIndex] = true;
+      }
+    }
   }
 }
 
